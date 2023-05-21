@@ -102,6 +102,7 @@ def lazytables(
     defined your write function, it will know that the second parameter must be
     that that type as well.
     """
+
     def decorator(cls):
         # Tables
         table_mapping = _get_cls_table_mapping(cls)
@@ -122,6 +123,7 @@ def lazytables(
             self._data = {}
 
         import re
+
         # Set an accurate `__annotations__` so that the actual class name of
         # 'table_type' is used instead of 'TableType'
         type_hints = get_type_hints(__init__, globals(), locals())
@@ -150,6 +152,7 @@ class _TableProtocol(Protocol[TableType]):
           and write function
         - The return type and parameter types of the user's write function
     """
+
     write: _TableWriter[TableType]
     _read_func: Callable[[str], TableType]
     _write_func: Callable[[str, TableType, *Tuple[Any, ...]], Any]
@@ -183,6 +186,7 @@ class _TableReader:
     A descriptor who, when accessed, calls the user's read function
     to retrieve a table, or return a cached table if read already.
     """
+
     key: str
     value: Any
 
@@ -207,6 +211,7 @@ class _TableWriter(Generic[TableType]):
         2. Any table name can be accessed as an attribute, but instead of returning
            a table, it's a callable for the user's write function
     """
+
     tables: _TableProtocol[TableType]
 
     def __getattr__(
@@ -222,16 +227,24 @@ class _TableWriter(Generic[TableType]):
         ... you can do ...
         >>> tables.write.table_one(new_df_one)
         """
-        def write_wrapper(data: TableType, *args, **kwargs) -> _TableProtocol[TableType]:
+
+        def write_wrapper(
+            data: TableType, *args, **kwargs
+        ) -> _TableProtocol[TableType]:
             return self(table_name, data, *args, **kwargs)
+
         return write_wrapper
 
     @overload
-    def __call__(self, name_or_mapping: str, data: TableType, **kwargs) -> _TableProtocol[TableType]:
+    def __call__(
+        self, name_or_mapping: str, data: TableType, **kwargs
+    ) -> _TableProtocol[TableType]:
         ...
 
     @overload
-    def __call__(self, name_or_mapping: Dict[str, TableType], data: None, **kwargs) -> _TableProtocol[TableType]:
+    def __call__(
+        self, name_or_mapping: Dict[str, TableType], data: None, **kwargs
+    ) -> _TableProtocol[TableType]:
         ...
 
     def __call__(self, name_or_mapping, data=None, **kwargs):
@@ -251,11 +264,12 @@ class _TableWriter(Generic[TableType]):
         if not callable(self.tables._write_func):
             raise AttributeError("Lazytables object does not have a write function")
 
-        if (
-            (not isinstance(name_or_mapping, dict) and data is None)
-            or (isinstance(name_or_mapping, dict) and data is not None)
+        if (not isinstance(name_or_mapping, dict) and data is None) or (
+            isinstance(name_or_mapping, dict) and data is not None
         ):
-            raise ValueError("Must provide either a name and data, or a mapping of names to data")
+            raise ValueError(
+                "Must provide either a name and data, or a mapping of names to data"
+            )
 
         mapping = name_or_mapping
         if not isinstance(name_or_mapping, dict):
@@ -267,7 +281,9 @@ class _TableWriter(Generic[TableType]):
                 raise AttributeError(f"Invalid table name, '{table_name}'.")
 
             table_id = self.tables._table_mapping[table_name]
-            self.tables._write_func(table_id, data, **kwargs)  # Execute the user's write function
+            self.tables._write_func(
+                table_id, data, **kwargs
+            )  # Execute the user's write function
             self.tables._data[table_name] = data  # Update the cache
         return self.tables
 
@@ -301,66 +317,12 @@ def _get_cls_table_mapping(cls) -> Dict[str, str]:
         return True
 
     names_and_values_given = {
-        k: v if v is not ... else k for k,v in cls.__dict__.items()
-        if valid_item(k, v)
+        k: v if v is not ... else k for k, v in cls.__dict__.items() if valid_item(k, v)
     }
     only_names_given = {
-        k: k for k in getattr(cls, "__annotations__", {})
+        k: k
+        for k in getattr(cls, "__annotations__", {})
         if valid_item(k, k) and k not in names_and_values_given
     }
     names_and_values_given.update(only_names_given)
     return names_and_values_given
-
-
-
-
-
-if __name__ == '__main__':
-    """
-    TESTS:
-        Table values:
-            key: ...
-            key = 'table_name'
-            key: ... = 'table_name'
-
-        Input to read func must be string
-        Type hint of read func must match table type
-        Type hint of write func param must match table type
-        Attribute access from class must return table type
-    """
-    @lazytables(dict)
-    class NGAP:
-        table_one: dict = {}
-        table_two: ...
-        table_three: ... = "table - three"
-        table_four: ... = ...
-        table_five = ...
-
-
-    def my_read_func_func(name: str) -> dict:
-        if name == {}:
-            print("Got dict successfully")
-        if name is ...:
-            print("Didn't get anything")
-        return {'name': name, 'a': 1, 'b': 2}
-
-    # def my_write_func(name: str, df: dict) -> None:
-        # print("writing", df)
-
-    ngap = NGAP(my_read_func_func)
-
-    # x = ngap.write('table_one', {'a': 1, 'b': 2})
-    ngap.write
-
-    for t in [
-        ngap.table_one,
-        ngap.table_two,
-        ngap.table_three,
-        ngap.table_four,
-        ngap.table_five,
-    ]:
-        t.update({'c': 1})
-        print(t)
-        print()
-
-    print(ngap._data)
