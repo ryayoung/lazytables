@@ -150,15 +150,12 @@ class _TableProtocol(Protocol[TableType]):
           and write function
         - The return type and parameter types of the user's write function
     """
+    write: _TableWriter[TableType]
     _read_func: Callable[[str], TableType]
     _write_func: Callable[[str, TableType, *Tuple[Any, ...]], Any]
     _table_mapping: Dict[str, str]
     _cache: bool
     _data: dict[str, TableType]
-
-    @property
-    def write(self) -> _TableWriter[TableType]:
-        ...
 
     def __getattr__(self, table_name: str) -> TableType:
         ...
