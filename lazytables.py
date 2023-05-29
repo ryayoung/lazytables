@@ -363,7 +363,7 @@ if __name__ == "__main__":
     ngap = NGAP(my_read_func_func)
 
     # x = ngap.write('table_one', {'a': 1, 'b': 2})
-    ngap.write
+    ngap.write("table_one", {"a": 1, "b": 2})
 
     for t in [
         ngap.table_one,
