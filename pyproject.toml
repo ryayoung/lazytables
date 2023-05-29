@@ -4,9 +4,9 @@ build-backend = "hatchling.build"
 
 [project]
 name = "lazytables"
-version = "0.0.1"
+version = "0.0.2"
 python_requires = ">=3.10"
-description = "Utility data structures with simple but powerful features."
+description = "A micro-framework for managing data sources."
 authors = [
     {name = "Ryan Young", email = "dev@ryayoung.com"}
 ]
